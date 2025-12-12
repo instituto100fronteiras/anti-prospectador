@@ -88,7 +88,19 @@ def auto_refill_leads():
                     # Validate WhatsApp immediately
                     jid = check_whatsapp_exists(lead['phone'])
                     if jid:
-                        lead['status'] = 'new'
+                        # NEW: Check Chatwoot before adding as 'new'
+                        # This prevents contacting leads we already spoke to (even if DB was wiped)
+                        from chatwoot_api import get_contact_by_phone
+                        cw_contact = get_contact_by_phone(lead['phone'])
+                        
+                        if cw_contact:
+                            print(f"[Auto-Refill] Found in Chatwoot: {lead['phone']} ({cw_contact.get('name')}). Importing as 'contacted'.")
+                            lead['status'] = 'contacted' # Add to DB but assume already contacted
+                            # Optional: fetch conversation history to be smarter? 
+                            # For now, safe default is NOT to message again.
+                        else:
+                            lead['status'] = 'new'
+                        
                         if add_lead(lead):
                             added_count += 1
                     else:
