@@ -61,6 +61,21 @@ def run_search_background(query, num_pages):
 
 app = Flask(__name__, template_folder='templates')
 
+# --- RESTORE HISTORY ENDPOINT ---
+@app.route('/api/restore_history')
+def manual_restore():
+    from restore_from_chatwoot import restore_leads
+    
+    def run_restore():
+        print("🚀 [Manual Trigger] Starting history restoration...")
+        restore_leads()
+        print("✅ [Manual Trigger] Restoration complete.")
+        
+    thread = threading.Thread(target=run_restore)
+    thread.start()
+    
+    return jsonify({"status": "started", "message": "Restoration started in background. Check logs."})
+
 # --- UI ROUTES ---
 
 @app.route('/')
