@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Configurações - Agente Prospectador</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0db9f2",
+                        "background-dark": "#101e22",
+                        "surface-dark": "#1a262b",
+                        "border-dark": "#283539",
+                        "text-secondary": "#9cb2ba"
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+</head>
+
+<body class="bg-background-dark text-white font-display flex flex-col min-h-screen">
+    <header class="border-b border-border-dark px-6 py-4 flex items-center justify-between">
+        <h1 class="text-xl font-bold">Configurações</h1>
+        <a href="/" class="text-text-secondary hover:text-white">Voltar ao Dashboard</a>
+    </header>
+
+    <main class="flex-1 p-8 max-w-4xl mx-auto w-full">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Connection Status -->
+            <div class="bg-surface-dark border border-border-dark rounded-xl p-6">
+                <div class="flex items-center gap-3 mb-4 text-emerald-500">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    <h2 class="text-lg font-bold text-white">Status do Sistema</h2>
+                </div>
+                <p class="text-text-secondary text-sm mb-4">Todas as conexões parecem operacionais.</p>
+                <div class="space-y-2">
+                    <div class="flex justify-between p-3 bg-[#111618] rounded-lg border border-border-dark">
+                        <span class="text-sm">Banco de Dados</span>
+                        <span
+                            class="text-xs bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded border border-emerald-500/20">Conectado</span>
+                    </div>
+                    <div class="flex justify-between p-3 bg-[#111618] rounded-lg border border-border-dark">
+                        <span class="text-sm">Evolution API</span>
+                        <span
+                            class="text-xs bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded border border-emerald-500/20">Ativo</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Maintenance -->
+            <div class="bg-surface-dark border border-border-dark rounded-xl p-6">
+                <div class="flex items-center gap-3 mb-4 text-orange-500">
+                    <span class="material-symbols-outlined">build</span>
+                    <h2 class="text-lg font-bold text-white">Manutenção da Base</h2>
+                </div>
+                <p class="text-text-secondary text-sm mb-6">Ferramentas para limpeza e organização de leads.</p>
+
+                <form action="/settings/revalidate" method="POST">
+                    <button type="submit"
+                        class="w-full flex items-center justify-center gap-2 bg-[#111618] hover:bg-[#1c2427] border border-border-dark hover:border-text-secondary text-white py-3 rounded-lg transition-all group">
+                        <span class="material-symbols-outlined group-hover:rotate-180 transition-transform">sync</span>
+                        Re-validar Números (Leads 'New')
+                    </button>
+                    <p class="text-xs text-text-secondary mt-2 text-center">Isso verificará todos os leads com status
+                        'new' na Evolution API.</p>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

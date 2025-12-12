@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Chat - Agente Prospectador</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0db9f2",
+                        "surface-dark": "#18282d",
+                        "surface-darker": "#142226",
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+</head>
+
+<body class="bg-[#101e22] text-white font-display overflow-hidden h-screen flex">
+    <!-- Sidebar -->
+    <div class="w-20 md:w-64 bg-surface-darker flex flex-col justify-between border-r border-slate-800 shrink-0">
+        <div class="flex flex-col gap-4 p-4">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="bg-primary rounded-lg size-10 flex items-center justify-center text-white">
+                    <span class="material-symbols-outlined text-2xl">smart_toy</span>
+                </div>
+                <div class="hidden md:flex flex-col">
+                    <h1 class="text-white text-base font-bold">Agente IA</h1>
+                    <p class="text-primary text-xs font-medium">Online</p>
+                </div>
+            </div>
+            <nav class="flex flex-col gap-2">
+                <a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors" href="/">
+                    <span class="material-symbols-outlined text-slate-400">arrow_back</span>
+                    <p class="hidden md:block text-slate-400 text-sm font-medium">Voltar</p>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-3 rounded-lg bg-primary/10 border border-primary/20"
+                    href="/chat">
+                    <span class="material-symbols-outlined text-primary">chat_bubble</span>
+                    <p class="hidden md:block text-white text-sm font-medium">Chat</p>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex flex-col flex-1 h-full min-w-0">
+        <header class="flex items-center border-b border-slate-800 bg-surface-dark px-6 py-3 h-16 shrink-0 z-10">
+            <h2 class="text-white text-lg font-bold">Central de Mensagens</h2>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Left Panel: Chat List -->
+            <div class="w-full max-w-[300px] bg-surface-dark border-r border-slate-800 flex flex-col shrink-0">
+                <div class="flex-1 overflow-y-auto custom-scrollbar">
+                    {% for lead in active_chats %}
+                    <div class="p-4 border-b border-slate-800 hover:bg-white/5 cursor-pointer"
+                        onclick="window.location.href='/chat?phone={{ lead.phone }}'">
+                        <div class="flex justify-between items-start mb-1">
+                            <h3 class="font-bold text-white text-sm truncate">{{ lead.name }}</h3>
+                            <span class="text-[11px] text-slate-500">{{ lead.last_contact }}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 truncate">{{ lead.phone }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Right Panel: Active Chat -->
+            <div class="flex-1 flex flex-col bg-[#101e22] min-w-0 relative">
+                {% if selected_chat %}
+                <div class="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-surface-dark/50">
+                    <div>
+                        <h3 class="text-white font-bold text-sm">{{ selected_chat.name }}</h3>
+                        <p class="text-xs text-slate-400">{{ selected_chat.phone }}</p>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6 space-y-4">
+                    {% for msg in selected_chat.messages %}
+                    <div class="flex flex-col gap-1 {{ 'items-end' if msg.is_agent else 'items-start' }}">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-[11px] text-slate-400">{{ msg.sender }}</span>
+                        </div>
+                        <div
+                            class="{{ 'bg-primary/20 text-white border-primary/30' if msg.is_agent else 'bg-slate-800 text-slate-200 border-slate-700' }} border p-3 rounded-2xl text-sm max-w-[80%]">
+                            {{ msg.content }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Input -->
+                <div class="p-4 bg-surface-dark border-t border-slate-800 inverted">
+                    <!-- In a real app we'd use AJAX, here a simple form for MVP -->
+                    <form action="/chat/send" method="POST"
+                        class="relative bg-surface-darker rounded-xl border border-slate-700">
+                        <input type="hidden" name="phone" value="{{ selected_chat.phone }}">
+                        <input name="message"
+                            class="w-full bg-transparent border-none text-white placeholder-slate-500 py-3 pl-4 pr-12 focus:ring-0"
+                            placeholder="Escreva uma resposta..." autocomplete="off">
+                        <button type="submit" class="absolute right-2 bottom-2 p-1.5 bg-primary text-white rounded-lg">
+                            <span class="material-symbols-outlined text-[20px]">send</span>
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <div class="flex-1 flex items-center justify-center text-slate-500">
+                    Selecione uma conversa ao lado.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

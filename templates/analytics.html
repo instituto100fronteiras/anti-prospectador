@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Analytics - Agente Prospectador</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0db9f2",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#101e22",
+                        "surface-dark": "#16262c",
+                        "card-dark": "#1b2d33",
+                        "text-secondary": "#9cb2ba",
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-hidden flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 hidden md:flex flex-col border-r border-[#283539] bg-[#111618] h-full flex-shrink-0">
+        <div class="p-6 pb-2">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="bg-primary rounded-lg size-10 flex items-center justify-center text-white">
+                    <span class="material-symbols-outlined text-2xl">smart_toy</span>
+                </div>
+                <div>
+                    <h1 class="text-white text-base font-bold leading-tight">Agente<br />Prospectador</h1>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 px-4 flex flex-col gap-2 overflow-y-auto">
+            <a href="/"
+                class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-secondary hover:bg-surface-dark hover:text-white transition-colors">
+                <span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+            <a href="/analytics"
+                class="flex items-center gap-3 px-3 py-3 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                <span class="material-symbols-outlined">analytics</span>
+                Performance Prompts
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark relative">
+        <header class="w-full border-b border-[#283539] bg-[#111618]/50 backdrop-blur-sm z-10 px-6 py-5">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-white text-3xl font-bold tracking-tight mb-1">Performance de Prompts</h2>
+                    <p class="text-text-secondary text-sm">Análise comparativa das mensagens A, B e C</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6">
+            <div class="max-w-7xl mx-auto flex flex-col gap-6">
+                <!-- Table -->
+                <div class="bg-card-dark border border-[#283539] rounded-xl overflow-hidden mb-6">
+                    <div class="p-6 border-b border-[#283539]">
+                        <h3 class="text-white font-bold text-lg">Detalhes por Versão</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-text-secondary">
+                            <thead class="bg-[#111618] text-xs uppercase font-medium">
+                                <tr>
+                                    <th class="px-6 py-4 text-white">Versão</th>
+                                    <th class="px-6 py-4 text-right">Envios</th>
+                                    <th class="px-6 py-4 text-right">Respostas</th>
+                                    <th class="px-6 py-4 text-right">Taxa (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[#283539]">
+                                {% for row in analytics_data %}
+                                <tr class="hover:bg-[#283539]/30 transition-colors">
+                                    <td class="px-6 py-4 font-medium text-white">{{ row['prompt_version'] }}</td>
+                                    <td class="px-6 py-4 text-right">{{ row['enviados'] }}</td>
+                                    <td class="px-6 py-4 text-right">{{ row['respostas'] }}</td>
+                                    <td class="px-6 py-4 text-right font-bold text-primary">{{ row['conversao'] }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Prompt Viewer Carousel -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-card-dark border border-[#283539] rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-white font-bold">Prompt A</h4>
+                            <span class="text-xs font-mono text-text-secondary">Formal</span>
+                        </div>
+                        <div
+                            class="text-sm text-text-secondary bg-[#111618] p-4 rounded-lg border border-[#283539] font-mono whitespace-pre-wrap leading-relaxed">
+                            Boa tarde!
+                            Aqui é o Ivair, do portal 100fronteiras 👋
+                            A Revista 100fronteiras completa 20 anos em 2026 e estamos montando parcerias
+                            estratégicas...</div>
+                    </div>
+                    <div class="bg-card-dark border border-[#283539] rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-white font-bold">Prompt B</h4>
+                            <span class="text-xs font-mono text-text-secondary">Direto</span>
+                        </div>
+                        <div
+                            class="text-sm text-text-secondary bg-[#111618] p-4 rounded-lg border border-[#283539] font-mono whitespace-pre-wrap leading-relaxed">
+                            Olá, ótima semana!
+                            Aqui é o Ivair, da 100fronteiras. Com quem eu falo aí no comercial?
+                            Em 2026 a gente comemora 20 anos...</div>
+                    </div>
+                    <div class="bg-card-dark border border-[#283539] rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-white font-bold">Prompt C</h4>
+                            <span class="text-xs font-mono text-text-secondary">Curto</span>
+                        </div>
+                        <div
+                            class="text-sm text-text-secondary bg-[#111618] p-4 rounded-lg border border-[#283539] font-mono whitespace-pre-wrap leading-relaxed">
+                            E aí, tudo bem?
+                            Sou o Ivair do 100fronteiras...
+                            Estamos preparando uma edição especial pelos 20 anos da revista...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

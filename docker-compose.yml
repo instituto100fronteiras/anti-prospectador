@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  agente-prospectador:
+    build: .
+    container_name: agente_prospectador
+    restart: always
+    ports:
+      - "8501:8501" # Dashboard
+      - "5001:5001" # Webhook
+    env_file:
+      - .env
+    environment:
+      - TZ=America/Sao_Paulo
+    volumes:
+      - ./leads.db:/app/leads.db # Persist database

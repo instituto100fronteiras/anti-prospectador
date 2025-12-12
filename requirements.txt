@@ -1,0 +1,8 @@
+requests
+google-search-results
+openai
+python-dotenv
+flask
+streamlit
+pandas
+schedule

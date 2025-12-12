@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Buscar Leads - Agente Prospectador</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0db9f2",
+                        "primary-dark": "#0a9acb",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#101e22",
+                        "card-dark": "#1b2427",
+                        "border-dark": "#283539",
+                        "text-secondary": "#9cb2ba",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "mono": ["monospace"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white min-h-screen flex flex-col overflow-x-hidden">
+    <!-- Header -->
+    <header
+        class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-border-dark bg-background-light dark:bg-background-dark px-6 py-3 lg:px-10">
+        <div class="flex items-center gap-4">
+            <a href="/" class="flex items-center gap-4 hover:opacity-80 transition-opacity">
+                <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary">
+                    <span class="material-symbols-outlined text-3xl">smart_toy</span>
+                </div>
+                <h2 class="text-lg font-bold leading-tight tracking-[-0.015em] hidden sm:block">Agente Prospectador</h2>
+            </a>
+        </div>
+        <div class="flex flex-1 justify-end gap-6 items-center">
+            <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-text-secondary">
+                <a class="hover:text-primary transition-colors" href="/">Dashboard</a>
+                <a class="text-white" href="/leads">Buscar Leads</a>
+                <a class="hover:text-primary transition-colors" href="/manage">Gerenciar</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 flex justify-center py-8 px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col max-w-[1024px] w-full gap-8">
+            <!-- Heading -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                <div class="flex flex-col gap-2">
+                    <h1 class="text-3xl md:text-4xl font-black leading-tight tracking-tight">Nova Prospecção</h1>
+                    <p class="text-text-secondary text-base font-normal max-w-2xl">Configure os parâmetros para iniciar
+                        a varredura.</p>
+                </div>
+                <div class="flex items-center gap-2 text-sm text-primary bg-primary/10 px-3 py-1.5 rounded-full">
+                    <span class="material-symbols-outlined text-base">bolt</span>
+                    <span class="font-bold">Sistema Ativo</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left: Form -->
+                <div class="lg:col-span-2 flex flex-col gap-6">
+                    <div
+                        class="rounded-xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark shadow-sm overflow-hidden">
+                        <div
+                            class="p-6 border-b border-slate-200 dark:border-border-dark flex justify-between items-center">
+                            <h3 class="text-lg font-bold">Parâmetros de Busca</h3>
+                        </div>
+                        <form action="/leads/search" method="POST" class="p-6 flex flex-col gap-6">
+                            <div class="flex flex-col md:flex-row gap-6">
+                                <label class="flex flex-col flex-1 gap-2">
+                                    <span class="text-sm font-medium text-text-secondary">Termo / Nicho</span>
+                                    <div class="relative">
+                                        <div
+                                            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span class="material-symbols-outlined text-text-secondary">search</span>
+                                        </div>
+                                        <input name="term" required
+                                            class="w-full h-12 pl-10 pr-4 rounded-lg bg-slate-50 dark:bg-[#111618] border border-slate-300 dark:border-[#3b4e54] text-slate-900 dark:text-white placeholder:text-text-secondary focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+                                            placeholder="Ex: construtoras em foz do iguaçu" type="text" />
+                                    </div>
+                                </label>
+                                <label class="flex flex-col flex-1 gap-2">
+                                    <span class="text-sm font-medium text-text-secondary">Páginas de Result.</span>
+                                    <input name="pages" type="number" min="1" max="5" value="1"
+                                        class="w-full h-12 pl-4 pr-4 rounded-lg bg-slate-50 dark:bg-[#111618] border border-slate-300 dark:border-[#3b4e54] text-slate-900 dark:text-white focus:ring-2 focus:ring-primary outline-none" />
+                                </label>
+                            </div>
+
+                            <div class="flex justify-end pt-2">
+                                <button type="submit"
+                                    class="group flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-background-dark font-bold text-base h-12 px-8 rounded-lg transition-all shadow-[0_0_20px_rgba(13,185,242,0.3)] hover:shadow-[0_0_30px_rgba(13,185,242,0.5)]">
+                                    <span
+                                        class="material-symbols-outlined group-hover:animate-pulse">rocket_launch</span>
+                                    Iniciar Busca
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Results / Console (Visible if results exist) -->
+                    {% if recent_results %}
+                    <div class="rounded-xl bg-[#0a1012] border border-border-dark overflow-hidden relative">
+                        <div
+                            class="px-4 py-3 bg-[#151e21] border-b border-border-dark flex justify-between items-center">
+                            <span class="text-xs font-mono text-emerald-500 uppercase tracking-wider">Resultados
+                                Recentes</span>
+                        </div>
+                        <div class="p-6 font-mono text-sm h-64 overflow-y-auto flex flex-col gap-2 relative">
+                            {% for log in recent_results %}
+                            <div class="flex gap-2">
+                                <span class="text-text-secondary">[{{ log['time'] }}]</span>
+                                <span class="text-emerald-400">SUCCESS</span>
+                                <span class="text-slate-300">{{ log['msg'] }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Right: Stats -->
+                <div class="flex flex-col gap-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-card-dark p-4 rounded-xl border border-border-dark flex flex-col gap-1">
+                            <span class="text-text-secondary text-xs font-medium uppercase">Leads Hoje</span>
+                            <span class="text-2xl font-bold text-white">{{ leads_today_count }}</span>
+                        </div>
+                        <div class="bg-card-dark p-4 rounded-xl border border-border-dark flex flex-col gap-1">
+                            <span class="text-text-secondary text-xs font-medium uppercase">Total DB</span>
+                            <span class="text-2xl font-bold text-emerald-400">{{ total_leads_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

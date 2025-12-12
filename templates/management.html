@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Gerenciar Leads - Agente Prospectador</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0db9f2",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#101e22",
+                        "surface-dark": "#1a262b",
+                        "border-dark": "#283539",
+                        "text-secondary": "#9cb2ba"
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #111618;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #283539;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b4e54;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white h-screen flex overflow-hidden lg:flex-row flex-col">
+    <!-- Sidebar -->
+    <aside
+        class="w-64 flex-shrink-0 border-r border-border-dark bg-[#111618] flex flex-col justify-between p-4 hidden lg:flex h-full">
+        <div class="flex flex-col gap-6">
+            <div class="flex gap-3 items-center px-2">
+                <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ring-2 ring-primary/20"
+                    style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBAk-mKLOWmfj9lcTM2FoaBKTX3-VEU_k9HgowU_CHhaAU_aOxvdI9UamFiFdbeEKUqBjXpDCVUi-HIapf_QHB4ctsGQ8HZXEWHxt7wD4YXxDL_b8N9vSDRZFFcxx8IVejBlXbaGSD0hZTJTUxEEGIP9N5TZKjMte_Bn00mJiuI8ICwfcdG_qdO_TkGweH1w7JDa5UKCe63YzeM2vDPwXF1a22cuNX5F5SB7GfAYLCqLpk_P46U3dhhdtaTFWBQFmqBHwA6fvLH42Y9");'>
+                </div>
+                <div class="flex flex-col">
+                    <h1 class="text-white text-base font-bold leading-normal">Agente IA</h1>
+                    <p class="text-text-secondary text-xs font-normal">Online 🟢</p>
+                </div>
+            </div>
+            <div class="flex flex-col gap-2">
+                <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-secondary hover:text-white hover:bg-surface-dark transition-colors"
+                    href="/">
+                    <span class="material-symbols-outlined">pie_chart</span>
+                    <p class="text-sm font-medium">Dashboard</p>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 text-white"
+                    href="/manage">
+                    <span class="material-symbols-outlined text-primary">group</span>
+                    <p class="text-sm font-medium">Leads</p>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-secondary hover:text-white hover:bg-surface-dark transition-colors"
+                    href="/leads">
+                    <span class="material-symbols-outlined">search</span>
+                    <p class="text-sm font-medium">Buscar</p>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative">
+        <div class="flex-shrink-0 p-8 pb-4">
+            <div class="max-w-[1400px] mx-auto flex flex-col gap-6">
+                <!-- Header -->
+                <div class="flex flex-wrap justify-between items-end gap-4">
+                    <div class="flex flex-col gap-1">
+                        <h1 class="text-white text-3xl font-black tracking-tight">Gerenciar Leads</h1>
+                        <p class="text-text-secondary text-base">Visão geral da base de contatos.</p>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="flex justify-between items-center bg-surface-dark p-2 rounded-xl border border-border-dark">
+                    <div class="relative w-full lg:w-96">
+                        <span
+                            class="material-symbols-outlined absolute left-3 top-2.5 text-text-secondary">search</span>
+                        <input
+                            class="block w-full pl-10 pr-3 py-2.5 bg-[#111618] border border-border-dark rounded-lg text-white placeholder-text-secondary focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm"
+                            placeholder="Buscar por nome..." type="text" />
+                    </div>
+                    <a href="/manage/export"
+                        class="flex items-center gap-2 px-4 py-2 bg-surface-dark border border-border-dark hover:bg-[#233036] text-white rounded-lg transition-colors text-sm font-medium mr-2">
+                        <span class="material-symbols-outlined text-sm">download</span>
+                        Exportar CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="flex-1 px-8 pb-4 overflow-hidden flex flex-col min-h-0">
+            <div
+                class="max-w-[1400px] mx-auto w-full h-full flex flex-col bg-surface-dark border border-border-dark rounded-xl shadow-2xl overflow-hidden">
+                <div class="overflow-auto custom-scrollbar flex-1">
+                    <table class="min-w-full text-left border-collapse">
+                        <thead class="bg-[#233036] sticky top-0 z-10">
+                            <tr>
+                                <th class="px-6 py-4 text-xs font-semibold text-text-secondary uppercase">Lead</th>
+                                <th class="px-6 py-4 text-xs font-semibold text-text-secondary uppercase">Telefone</th>
+                                <th class="px-6 py-4 text-xs font-semibold text-text-secondary uppercase">Status</th>
+                                <th class="px-6 py-4 text-xs font-semibold text-text-secondary uppercase">Último Contato
+                                </th>
+                                <th class="px-6 py-4 text-xs font-semibold text-text-secondary uppercase text-right">
+                                    Trello</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border-dark">
+                            {% for lead in leads %}
+                            <tr class="hover:bg-[#283539] transition-colors cursor-pointer"
+                                onclick="window.location.href='/manage?selected_phone={{ lead.phone }}'">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-white">{{ lead['name'] }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                    {{ lead['phone'] }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span
+                                        class="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-700/30 text-gray-300 border border-gray-600/30">
+                                        {{ lead['status'] }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                    {{ lead['last_contact_date'] }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <a class="text-blue-400 hover:text-blue-300 text-xs" href="#">Link</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Panel (Overlay) -->
+        {% if selected_lead %}
+        <div class="absolute inset-0 bg-black/50 z-20 flex justify-end transition-opacity">
+            <div
+                class="w-full max-w-md bg-[#161b1d] h-full shadow-2xl border-l border-border-dark flex flex-col transform transition-transform animate-slide-in">
+                <div class="p-6 border-b border-border-dark flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white">Gerenciar Lead</h2>
+                    <a href="/manage" class="text-text-secondary hover:text-white">
+                        <span class="material-symbols-outlined">close</span>
+                    </a>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                    <!-- Info -->
+                    <div class="space-y-2">
+                        <h3 class="font-bold text-white text-lg">{{ selected_lead.name }}</h3>
+                        <div class="flex gap-2">
+                            <a href="https://wa.me/{{ selected_lead.phone }}" target="_blank"
+                                class="px-3 py-1 bg-green-500/10 text-green-500 rounded text-xs font-bold border border-green-500/20 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">chat</span> WhatsApp
+                            </a>
+                            <a href="/chat?phone={{ selected_lead.phone }}"
+                                class="px-3 py-1 bg-primary/10 text-primary rounded text-xs font-bold border border-primary/20 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">forum</span> Chat Interno
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- AI Generation -->
+                    <div class="bg-surface-dark p-4 rounded-xl border border-border-dark space-y-4">
+                        <h4 class="text-sm font-bold text-text-secondary uppercase">Gerar Mensagem (IA)</h4>
+                        <div class="flex gap-2">
+                            <select id="promptVersion"
+                                class="flex-1 bg-background-dark border border-border-dark rounded-lg text-white text-sm px-3 py-2">
+                                <option value="A">Prompt A</option>
+                                <option value="B">Prompt B</option>
+                                <option value="C">Prompt C</option>
+                            </select>
+                            <button onclick="generateAI()"
+                                class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors">
+                                Gerar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Send Form -->
+                    <form action="/manage/actions/send" method="POST" class="flex flex-col gap-3">
+                        <input type="hidden" name="phone" value="{{ selected_lead.phone }}">
+                        <label class="text-sm font-bold text-text-secondary uppercase">Enviar Manualmente</label>
+                        <textarea id="messageBox" name="message" rows="6"
+                            class="w-full bg-surface-dark border border-border-dark rounded-xl text-white p-3 focus:ring-1 focus:ring-primary"
+                            placeholder="Digite sua mensagem ou gere com IA..."></textarea>
+                        <button type="submit"
+                            class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-lg font-bold shadow-lg transition-transform active:scale-[0.98]">
+                            Enviar Mensagem
+                        </button>
+                    </form>
+
+                    <!-- Status Actions -->
+                    <div class="pt-4 border-t border-border-dark">
+                        <h4 class="text-sm font-bold text-text-secondary uppercase mb-3">Alterar Status</h4>
+                        <form action="/manage/actions/status" method="POST" class="flex flex-wrap gap-2">
+                            <input type="hidden" name="phone" value="{{ selected_lead.phone }}">
+                            <button name="status" value="responded"
+                                class="px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-lg text-xs font-bold transition-colors">
+                                Marcar Respondido
+                            </button>
+                            <button name="status" value="contacted"
+                                class="px-3 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-lg text-xs font-bold transition-colors">
+                                Marcar Contactado
+                            </button>
+                            <button name="status" value="invalid_number"
+                                class="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-xs font-bold transition-colors">
+                                Inválido
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            async function generateAI() {
+                const phone = "{{ selected_lead.phone }}";
+                const version = document.getElementById('promptVersion').value;
+                const txtArea = document.getElementById('messageBox');
+
+                txtArea.value = "Gerando...";
+
+                try {
+                    const formData = new FormData();
+                    formData.append('phone', phone);
+                    formData.append('version', version);
+
+                    const res = await fetch('/manage/actions/generate', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+
+                    if (data.message) {
+                        txtArea.value = data.message;
+                    } else {
+                        txtArea.value = "Erro ao gerar.";
+                    }
+                } catch (e) {
+                    console.error(e);
+                    txtArea.value = "Erro na requisição.";
+                }
+            }
+        </script>
+        {% endif %}
+    </main>
+</body>
+
+</html>
