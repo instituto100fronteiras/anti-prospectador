@@ -429,10 +429,16 @@ def chat_page():
                     'content': content
                 })
             
+            chat_obj['raw_ts'] = l['last_contact_date'] or datetime.min
+            
             active_chats.append(chat_obj)
             
             if phone_filter and l['phone'] == phone_filter:
                 selected_chat = chat_obj
+
+    # SORT BY RECENT ACTIVITY (Newest First)
+    # This fixes the user request to show newest chats on top
+    active_chats.sort(key=lambda x: str(x.get('raw_ts', '')), reverse=True)
 
     # Default to first if none selected
     if not selected_chat and active_chats:
