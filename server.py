@@ -78,6 +78,17 @@ def dashboard():
         
         # Format time (naive)
         ts = lead['last_contact_date']
+        try:
+            # Check if ts is already a datetime object or string
+            if isinstance(ts, str):
+                # Try parsing if it's a string, or just use it raw if basic format
+                # Assuming ISO format or similar: 2023-10-10 10:10:10
+                # Just slice for simplicity if it's standard sql timestamp
+                time_str = ts[:16] # YYYY-MM-DD HH:MM
+            else:
+                time_str = ts.strftime('%d/%m %H:%M') if ts else "-"
+        except:
+             time_str = str(ts) if ts else "-"
 
         processed_leads.append({
             'name': lead['name'],
