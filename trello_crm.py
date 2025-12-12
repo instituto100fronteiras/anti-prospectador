@@ -202,6 +202,8 @@ def move_card(card_id, list_name):
         'key': API_KEY,
         'token': TOKEN
     }
+    try:
+        requests.put(url, params=query)
     except Exception as e:
         print(f"Error moving card: {e}")
 
