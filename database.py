@@ -2,7 +2,12 @@ import sqlite3
 import os
 from datetime import datetime
 
-DB_NAME = os.path.join(os.path.dirname(os.path.abspath(__file__)), "leads.db")
+# Determine DB path provided by env or default to local data dir
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+
+DB_NAME = os.path.join(DATA_DIR, "leads.db")
 
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
