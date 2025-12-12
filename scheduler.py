@@ -261,45 +261,43 @@ if __name__ == "__main__":
     
     try:
         # Initialize Trello Lists (Ensure they exist or just checking)
-    
-    # Initialize Trello Lists (Ensure they exist or just checking)
-    # User requested specific lists: 'Contato Frio', 'Conexão'
-    try:
-        import trello_crm
-        if trello_crm.is_configured():
-            # We assume these lists exist or we create them if missing?
-            # Let's create them just in case to avoid errors, using the names user gave.
-            trello_crm.create_list("Contato Frio")
-            trello_crm.create_list("Conexão")
-            # 'A Prospectar' is manual, so we don't necessarily need to autocreate it, but good practice.
-            trello_crm.create_list("A Prospectar")
-    except Exception as e:
-        print(f"Warning: Could not init Trello lists: {e}")
+        # User requested specific lists: 'Contato Frio', 'Conexão'
+        try:
+            import trello_crm
+            if trello_crm.is_configured():
+                # We assume these lists exist or we create them if missing?
+                # Let's create them just in case to avoid errors, using the names user gave.
+                trello_crm.create_list("Contato Frio")
+                trello_crm.create_list("Conexão")
+                # 'A Prospectar' is manual, so we don't necessarily need to autocreate it, but good practice.
+                trello_crm.create_list("A Prospectar")
+        except Exception as e:
+            print(f"Warning: Could not init Trello lists: {e}")
 
-    # Run once at startup to check/refill
-    auto_refill_leads()
-    
-    # Run the first job immediately as requested by user to see it working
-    print("[Job] Executing immediate start-up run...")
-    process_one_lead()
-    
-    # Schedule layout
-    schedule.every(30).minutes.do(process_one_lead)
-    
-    # Ideally checking refill more often?
-    schedule.every(1).hours.do(auto_refill_leads)
-
-    # Follow-ups (Check every 4 hours)
-    schedule.every(4).hours.do(process_followups, dry_run=False)
-
-    # Chatwoot <-> Trello Sync (Every 15 mins)
-    from sync_chatwoot_trello import run_sync
-    schedule.every(15).minutes.do(run_sync)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(60) # Sleep 1 minute to save CPU
+        # Run once at startup to check/refill
+        auto_refill_leads()
         
+        # Run the first job immediately as requested by user to see it working
+        print("[Job] Executing immediate start-up run...")
+        process_one_lead()
+        
+        # Schedule layout
+        schedule.every(30).minutes.do(process_one_lead)
+        
+        # Ideally checking refill more often?
+        schedule.every(1).hours.do(auto_refill_leads)
+
+        # Follow-ups (Check every 4 hours)
+        schedule.every(4).hours.do(process_followups, dry_run=False)
+
+        # Chatwoot <-> Trello Sync (Every 15 mins)
+        from sync_chatwoot_trello import run_sync
+        schedule.every(15).minutes.do(run_sync)
+
+        while True:
+            schedule.run_pending()
+            time.sleep(60) # Sleep 1 minute to save CPU
+            
     except Exception as e:
         print(f"CRITICAL SCHEDULER CRASH: {e}")
         import traceback
