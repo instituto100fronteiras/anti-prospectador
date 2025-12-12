@@ -252,12 +252,15 @@ def process_one_lead():
         update_lead_status(lead['phone'], 'error_sending')
 
 if __name__ == "__main__":
+    import sys
+    # Enable unbuffered output programmatically just in case
+    sys.stdout.reconfigure(line_buffering=True)
+    
     print("=== Auto-Scheduler Started ===")
     print("Schedule: Mon-Fri | 09:00-11:40 & 14:00-17:20 | Every 30 mins")
     
-if __name__ == "__main__":
-    print("=== Auto-Scheduler Started ===")
-    print("Schedule: Mon-Fri | 09:00-11:40 & 14:00-17:20 | Every 30 mins")
+    try:
+        # Initialize Trello Lists (Ensure they exist or just checking)
     
     # Initialize Trello Lists (Ensure they exist or just checking)
     # User requested specific lists: 'Contato Frio', 'Conexão'
@@ -296,3 +299,9 @@ if __name__ == "__main__":
     while True:
         schedule.run_pending()
         time.sleep(60) # Sleep 1 minute to save CPU
+        
+    except Exception as e:
+        print(f"CRITICAL SCHEDULER CRASH: {e}")
+        import traceback
+        traceback.print_exc()
+        raise e
