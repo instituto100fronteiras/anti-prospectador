@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Start Scheduler (Background with logging and auto-restart)
 # We stream logs to stdout now for Easypanel visibility
 (
