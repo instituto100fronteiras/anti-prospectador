@@ -260,6 +260,10 @@ if __name__ == "__main__":
     print("Schedule: Mon-Fri | 09:00-11:40 & 14:00-17:20 | Every 30 mins")
     
     try:
+        # Ensure Database is Initialized
+        from database import init_db
+        print("[Startup] Initializing database...")
+        init_db()
         # Initialize Trello Lists (Ensure they exist or just checking)
         # User requested specific lists: 'Contato Frio', 'Conexão'
         try:
