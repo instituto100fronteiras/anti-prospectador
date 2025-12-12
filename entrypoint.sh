@@ -2,7 +2,7 @@
 
 # Restore history from Chatwoot (Safe to run, skips duplicates)
 echo "[Startup] Syncing history from Chatwoot..."
-python3 restore_from_chatwoot.py
+python3 restore_from_chatwoot.py &
 
 # Start Scheduler (Background with logging and auto-restart)
 # We stream logs to stdout now for Easypanel visibility
