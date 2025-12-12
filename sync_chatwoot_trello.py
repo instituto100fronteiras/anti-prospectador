@@ -144,9 +144,33 @@ def process_conversation(conv, last_sync_ts):
     final_comment = f"{header}\n{update_block}\n_(Via Sync Automático)_"
     
     if card:
-        # Update existing
-        trello_crm.add_comment(card['id'], final_comment)
-        print(f"      Updated Trello Card: {card['name']} with {len(new_messages)} new messages")
+        # 1. Deduplication: Check if last comment is identical
+        last_comment = trello_crm.get_last_comment(card['id'])
+        if last_comment and update_block in last_comment:
+            print(f"      Skipping duplicate comment for {card['name']}")
+        else:
+            # Update existing
+            trello_crm.add_comment(card['id'], final_comment)
+            print(f"      Updated Trello Card: {card['name']} with {len(new_messages)} new messages")
+            
+        # 2. Intelligent Renaming (Cost Saving: Only if name looks like a phone number)
+        # Check if card name starts with + or digit (indicates phone number)
+        current_name = card['name']
+        is_phone_name = current_name.strip().startswith('+') or current_name.strip()[0].isdigit()
+        
+        if is_phone_name:
+             # We have new context, let's try to extract a name
+             print(f"      🕵️‍♂️ Analyzing conversation to rename card: {current_name}")
+             from agent import analyze_conversation_for_name
+             
+             # Use full history strictly for analysis
+             full_history = chatwoot_api.format_history_for_llm(messages)
+             recognition = analyze_conversation_for_name(full_history)
+             
+             if recognition and recognition.get('name') and recognition.get('confidence') == 'high':
+                 new_name = f"{recognition['name']} - {phone}"
+                 print(f"      ✨ Renaming card to: {new_name}")
+                 trello_crm.update_card(card['id'], name=new_name)
     else:
         # Create new
         lead_data = {
@@ -159,10 +183,6 @@ def process_conversation(conv, last_sync_ts):
         
         target_list = "Leads a Qualificar"
         trello_crm.create_list(target_list)
-        
-        # For new cards, we might want to include a bit more history? 
-        # But per logic, we only sync what's "new" since last sync.
-        # If it's a BRAND NEW conversation, last_sync might be before it started, so we get everything.
         
         card_id = trello_crm.create_card(lead_data, list_name=target_list)
         if card_id:

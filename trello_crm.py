@@ -202,7 +202,42 @@ def move_card(card_id, list_name):
         'key': API_KEY,
         'token': TOKEN
     }
+    except Exception as e:
+        print(f"Error moving card: {e}")
+
+def update_card(card_id, name=None, desc=None):
+    if not is_configured() or not card_id: return
+    
+    url = f"{BASE_URL}/cards/{card_id}"
+    query = {
+        'key': API_KEY,
+        'token': TOKEN
+    }
+    if name: query['name'] = name
+    if desc: query['desc'] = desc
+    
     try:
         requests.put(url, params=query)
     except Exception as e:
-        print(f"Error moving card: {e}")
+        print(f"Error updating card: {e}")
+
+def get_last_comment(card_id):
+    if not is_configured() or not card_id: return None
+    
+    url = f"{BASE_URL}/cards/{card_id}/actions"
+    query = {
+        'filter': 'commentCard',
+        'limit': 1,
+        'key': API_KEY,
+        'token': TOKEN
+    }
+    try:
+        response = requests.get(url, params=query)
+        if response.status_code == 200:
+            actions = response.json()
+            if actions:
+                return actions[0]['data']['text']
+        return None
+    except Exception as e:
+        print(f"Error getting comments: {e}")
+        return None

@@ -234,3 +234,48 @@ def generate_contextual_message(lead_data, conversation_history):
     except Exception as e:
         print(f"Error generating contextual message: {e}")
         return None
+
+def analyze_conversation_for_name(history_text):
+    """
+    Analyzes the conversation history to identify the Lead's Name or Company Name.
+    Returns JSON: {"name": "Found Name", "confidence": "high/medium/low"}
+    """
+    if not history_text or len(history_text) < 50:
+        return None
+
+    user_prompt = f"""
+    Analise o histórico de conversa abaixo e tente identificar o NOME DA PESSOA ou NOME DA EMPRESA com quem o Ivair está falando.
+    
+    HISTÓRICO:
+    {history_text}
+    
+    Regras:
+    1. Se o cliente se apresentou (ex: "Aqui é o João"), use "João".
+    2. Se for uma empresa (ex: "Somos da Arquitetura X"), use "Arquitetura X".
+    3. Se não tiver certeza, retorne null.
+    
+    Retorne APENAS um JSON válido:
+    {{
+        "name": "Nome Encontrado ou null",
+        "type": "person/company",
+        "confidence": "high/low"
+    }}
+    """
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "Você é um assistente que extrai dados de CRM."},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_tokens=100,
+            temperature=0.1,
+            response_format={"type": "json_object"}
+        )
+        
+        import json
+        return json.loads(response.choices[0].message.content)
+    except Exception as e:
+        print(f"Error analyzing name: {e}")
+        return None
