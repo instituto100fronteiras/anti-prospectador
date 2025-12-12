@@ -37,59 +37,35 @@ def restore_leads():
                 # Check if exists locally
                 cleaned_phone = phone.replace('+', '').replace(' ', '').replace('-', '')
                 
-                # Check BOTH formats (with/without country code if needed, but chatwoot usually has raw)
-                # We'll trust our standard cleaner
-                
+                # We process ALL leads (New or Existing) to ensure status is synced
                 existing = get_lead_by_phone(cleaned_phone)
+                
+                # Fetch History text (Needed for status check)
+                messages = chatwoot_api.get_conversation_history(sender.get('id'))
+                history_text = chatwoot_api.format_history_for_llm(messages)
+                    
+                # Determine Status - STRICT MODE
+                # Last message determines status
+                status = 'contacted' # Default
+                if messages and len(messages) > 0:
+                    # Assuming messages are sorted chronological (last is newest)
+                    last_msg = messages[-1]
+                    if last_msg.get('message_type') == 0: # 0 = Incoming (Client)
+                        status = 'responded'
+                    else:
+                        status = 'contacted'
+                        
+                # Last Activity Date
+                last_activity = conv.get('last_activity_at')
+                if last_activity:
+                    last_date = datetime.fromtimestamp(last_activity)
+                else:
+                    last_date = datetime.now()
+
                 if existing:
-                    total_skipped += 1
-                    # Optional: Update history anyway?
-                    continue
-                
-                # Create Lead Object
-                lead = {
-                    'name': name,
-                    'phone': cleaned_phone,
-                    'address': str(sender.get('location', '')),
-                    'website': '', # Unknown
-                    'rating': 0,
-                    'reviews': 0,
-                    'types': 'chatwoot_import',
-                    'search_term': 'Importado do Histórico',
-                    'language': 'pt' # Default
-                }
-                
-                # Add to DB
-                if add_lead(lead):
-                    # Fetch History text
-                    messages = chatwoot_api.get_conversation_history(sender.get('id'))
-                    history_text = chatwoot_api.format_history_for_llm(messages)
-                    
-                    # Determine Status
-                    # If user replied, status = 'responded'
-                    # If only we sent, status = 'contacted'
-                    status = 'contacted'
-                    if messages:
-                        # Check if any incoming message (message_type 0)
-                        has_reply = any(m.get('message_type') == 0 for m in messages)
-                        if has_reply:
-                            status = 'responded'
-                    
-                    # Update with status and history
-                    # We use update_lead_status which appends history
-                    # But since it's new, we can just run it once.
-                    
-                    # Manually update to set history correctly without appending to None
+                    # UPDATE existing lead
                     conn = get_db_connection()
                     c = conn.cursor()
-                    
-                    # Use the last_activity_at from Chatwoot for the date
-                    last_activity = conv.get('last_activity_at')
-                    if last_activity:
-                        last_date = datetime.fromtimestamp(last_activity)
-                    else:
-                        last_date = datetime.now()
-                        
                     c.execute('''
                         UPDATE leads 
                         SET status = ?, last_contact_date = ?, conversation_history = ?
@@ -97,11 +73,37 @@ def restore_leads():
                     ''', (status, last_date, history_text, cleaned_phone))
                     conn.commit()
                     conn.close()
+                    print(f"🔄 [Sync] Updated {name} ({cleaned_phone}) -> {status}")
                     
-                    print(f"✅ [Restore] Imported {name} ({cleaned_phone}) as {status}")
-                    total_restored += 1
                 else:
-                    print(f"❌ [Restore] Failed to add {cleaned_phone}")
+                    # INSERT new lead
+                    lead = {
+                        'name': name,
+                        'phone': cleaned_phone,
+                        'address': str(sender.get('location', '')),
+                        'website': '', 
+                        'rating': 0,
+                        'reviews': 0,
+                        'types': 'chatwoot_import',
+                        'search_term': 'Importado do Histórico',
+                        'language': 'pt'
+                    }
+                    
+                    if add_lead(lead):
+                         # Update status immediately after add
+                         conn = get_db_connection()
+                         c = conn.cursor()
+                         c.execute('''
+                            UPDATE leads 
+                            SET status = ?, last_contact_date = ?, conversation_history = ?
+                            WHERE phone = ?
+                        ''', (status, last_date, history_text, cleaned_phone))
+                         conn.commit()
+                         conn.close()
+                         print(f"✅ [Restore] Imported {name} ({cleaned_phone}) as {status}")
+                         total_restored += 1
+                    else:
+                         print(f"❌ [Restore] Failed to add {cleaned_phone}")
                     
             except Exception as e:
                 print(f"❌ [Restore] Error processing item: {e}")
