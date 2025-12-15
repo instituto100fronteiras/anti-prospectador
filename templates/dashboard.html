@@ -75,8 +75,16 @@
             <div class="flex flex-col">
                 <h1 class="font-bold text-lg leading-tight dark:text-white text-slate-900">Prospectador</h1>
                 <div class="flex items-center gap-1.5">
+                    {% if system_status == 'online' %}
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Sistema Online</span>
+                    {% elif system_status == 'stalled' %}
+                    <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                    <span class="text-xs text-orange-500 font-medium">Lento/Parado</span>
+                    {% else %}
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span class="text-xs text-red-500 font-bold">OFFLINE</span>
+                    {% endif %}
                 </div>
             </div>
         </div>

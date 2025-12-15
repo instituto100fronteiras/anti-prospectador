@@ -59,6 +59,32 @@ def run_search_background(query, num_pages):
         print(f"Search Error: {e}")
         SEARCH_LOGS.insert(0, {'time': datetime.now().strftime('%H:%M:%S'), 'msg': f"ERRO FATAL: {str(e)}"})
 
+def check_scheduler_status():
+    """
+    Checks if scheduler is alive by reading heartbeat file.
+    Returns: 'online' | 'stalled' | 'offline'
+    """
+    try:
+        heartbeat_path = "data/scheduler.heartbeat"
+        if not os.path.exists(heartbeat_path):
+            return 'offline'
+            
+        with open(heartbeat_path, 'r') as f:
+            ts = float(f.read().strip())
+            
+        last_pulse = datetime.fromtimestamp(ts)
+        now = datetime.now()
+        diff = (now - last_pulse).total_seconds()
+        
+        if diff < 120: # Less than 2 minutes
+            return 'online'
+        else:
+            return 'stalled' # > 2 minutes lag
+            
+    except Exception as e:
+        print(f"Status Check Error: {e}")
+        return 'offline'
+
 app = Flask(__name__, template_folder='templates')
 
 # --- RESTORE HISTORY ENDPOINT ---
@@ -82,6 +108,7 @@ def manual_restore():
 def dashboard():
     stats = get_dashboard_stats()
     hot_leads = get_hot_leads()
+    system_status = check_scheduler_status()
     
     # Process Hot Leads for Template
     processed_leads = []
@@ -151,7 +178,8 @@ def dashboard():
                            kpi_sent=stats['sent'],
                            kpi_responses=stats['responses'],
                            hot_leads=processed_leads,
-                           timeline_events=timeline)
+                           timeline_events=timeline,
+                           system_status=system_status)
 
 @app.route('/api/feed')
 def get_feed_html():

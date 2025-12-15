@@ -108,6 +108,20 @@ def auto_refill_leads():
             print(f"[Auto-Refill] Error searching: {e}")
 
 
+def update_heartbeat():
+    try:
+        # Write current timestamp to heartbeat file
+        heartbeat_path = "data/scheduler.heartbeat"
+        # Ensure data dir exists (it should, but safety first)
+        import os
+        os.makedirs("data", exist_ok=True)
+        
+        with open(heartbeat_path, "w") as f:
+            f.write(str(datetime.datetime.now().timestamp()))
+            
+    except Exception as e:
+        print(f"[Heartbeat] Error writing heartbeat: {e}")
+
 def process_one_lead():
     """
     Processa um lead da fila.
@@ -429,6 +443,7 @@ if __name__ == "__main__":
 
         while True:
             schedule.run_pending()
+            update_heartbeat() # Pulse every loop
             time.sleep(60)
             
     except Exception as e:
