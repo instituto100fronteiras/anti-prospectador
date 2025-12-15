@@ -4,7 +4,7 @@ import time
 from datetime import datetime, timedelta
 import chatwoot_api
 import trello_crm
-from database import get_db_connection
+from database import get_db_connection, get_lead_by_phone
 
 # File to store the last sync timestamp
 STATE_FILE = "sync_state.json"
@@ -173,6 +173,13 @@ def process_conversation(conv, last_sync_ts):
                  trello_crm.update_card(card['id'], name=new_name)
     else:
         # Create new
+        
+        # Tenta buscar nome correto no banco local
+        local_lead = get_lead_by_phone(phone)
+        if local_lead and local_lead['name']:
+            name = local_lead['name']
+            print(f"      Use local existing name: {name}")
+
         lead_data = {
             'name': name,
             'phone': phone,

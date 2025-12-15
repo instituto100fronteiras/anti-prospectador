@@ -13,4 +13,4 @@ services:
     environment:
       - TZ=America/Sao_Paulo
     volumes:
-      - ./leads.db:/app/leads.db # Persist database
+      - ./data:/app/data # Persist data directory (DB + logs if needed)

@@ -47,10 +47,9 @@ def is_within_business_hours():
     is_window2 = start2 <= current_time <= end2
     
     # Check Vacation Period (Dec 23 - Jan 6)
-    # 2025-12-23 to 2026-01-05 (Back on 6th)
     current_date = now.date()
     vacation_start = datetime.date(2025, 12, 23)
-    vacation_end = datetime.date(2026, 1, 5) # Inclusive, so it runs on 6th? No, waits until after 5th.
+    vacation_end = datetime.date(2026, 1, 5)
     
     if vacation_start <= current_date <= vacation_end:
         print(f"[Job] Vacation Mode: Paused until {vacation_end + datetime.timedelta(days=1)}.")
@@ -73,7 +72,7 @@ def auto_refill_leads():
         
         print(f"[Auto-Refill] Searching: '{query}'")
         try:
-            leads = search_leads(query, num_pages=1) # Search 1 page to check quality
+            leads = search_leads(query, num_pages=1)
             
             added_count = 0
             for lead in leads:
@@ -88,16 +87,13 @@ def auto_refill_leads():
                     # Validate WhatsApp immediately
                     jid = check_whatsapp_exists(lead['phone'])
                     if jid:
-                        # NEW: Check Chatwoot before adding as 'new'
-                        # This prevents contacting leads we already spoke to (even if DB was wiped)
-                        from chatwoot_api import get_contact_by_phone
-                        cw_contact = get_contact_by_phone(lead['phone'])
+                        # Check Chatwoot before adding as 'new'
+                        import chatwoot_api
+                        cw_contact = chatwoot_api.get_contact_by_phone(lead['phone'])
                         
                         if cw_contact:
                             print(f"[Auto-Refill] Found in Chatwoot: {lead['phone']} ({cw_contact.get('name')}). Importing as 'contacted'.")
-                            lead['status'] = 'contacted' # Add to DB but assume already contacted
-                            # Optional: fetch conversation history to be smarter? 
-                            # For now, safe default is NOT to message again.
+                            lead['status'] = 'contacted'
                         else:
                             lead['status'] = 'new'
                         
@@ -105,45 +101,79 @@ def auto_refill_leads():
                             added_count += 1
                     else:
                         print(f"      Skipping invalid number: {lead['phone']}")
-                        # Do not add to DB
-                        pass
                         
             print(f"[Auto-Refill] Added {added_count} leads.")
             
         except Exception as e:
             print(f"[Auto-Refill] Error searching: {e}")
 
+
 def process_one_lead():
+    """
+    Processa um lead da fila.
+    
+    VERSÃO CORRIGIDA com:
+    - Lock atômico (previne race condition)
+    - Verificação OBRIGATÓRIA no Chatwoot
+    - Fail-safe: não envia se Chatwoot falhar
+    - Análise de quem mandou última mensagem
+    - Detecção de sinais de recusa
+    """
     if not is_within_business_hours():
         print("[Job] Outside business hours. Skipping.")
         return
 
+    print("\n" + "=" * 60)
     print("[Job] Starting process for one lead...")
+    print("=" * 60)
     
+    # =========================================================================
+    # PASSO 1: SELECIONAR LEAD COM LOCK ATÔMICO
+    # =========================================================================
     conn = get_db_connection()
-    # Pick a random 'new' lead
-    # Using ORDER BY RANDOM() is inefficient for huge tables but fine here
-    lead_row = conn.execute("SELECT * FROM leads WHERE status = 'new' ORDER BY RANDOM() LIMIT 1").fetchone()
-    conn.close()
+    
+    # Seleciona um lead 'new' aleatório
+    lead_row = conn.execute("""
+        SELECT * FROM leads 
+        WHERE status = 'new' 
+        ORDER BY RANDOM() 
+        LIMIT 1
+    """).fetchone()
     
     if not lead_row:
+        conn.close()
         print("[Job] No new leads available.")
-        auto_refill_leads() # Trigger refill immediately if empty
+        auto_refill_leads()
         return
-
+    
     lead = dict(lead_row)
-    print(f"[Job] Selected lead: {lead['name']} ({lead['phone']}) - Lang: {lead.get('language')}")
+    lead_id = lead['id']
     
-    # LOCK LEAD IMMEDIATELY to prevent duplicates if crashed/stopped
-    update_lead_status(lead['phone'], 'processing')
+    # Lock atômico - marca como 'processing' imediatamente
+    cursor = conn.execute("""
+        UPDATE leads 
+        SET status = 'processing'
+        WHERE id = ? AND status = 'new'
+    """, (lead_id,))
+    conn.commit()
     
-    # DUPLICATE PREVENTION: Check if this phone was already contacted recently
+    if cursor.rowcount == 0:
+        conn.close()
+        print(f"[Job] Lead {lead_id} já foi pego por outro processo. Tentando próximo...")
+        return process_one_lead()
+    
+    conn.close()
+    print(f"[Job] 🔒 Lead locked: {lead['name']} ({lead['phone']})")
+    
+    # =========================================================================
+    # PASSO 2: VERIFICAÇÃO DE DUPLICATA NO BANCO LOCAL
+    # =========================================================================
     conn = get_db_connection()
     recent_contact = conn.execute("""
-        SELECT id, name, last_contact_date 
+        SELECT id, name, last_contact_date, status
         FROM leads 
         WHERE phone = ? 
-        AND status IN ('contacted', 'responded', 'follow_up_1', 'follow_up_2', 'follow_up_3')
+        AND status IN ('contacted', 'responded', 'follow_up_1', 'follow_up_2', 'follow_up_3', 'declined')
         AND last_contact_date > datetime('now', '-7 days')
         AND id != ?
     """, (lead['phone'], lead['id'])).fetchone()
@@ -151,168 +181,255 @@ def process_one_lead():
     
     if recent_contact:
         recent = dict(recent_contact)
-        print(f"      ⚠️ DUPLICATE DETECTED! Phone {lead['phone']} was already contacted:")
-        print(f"         Lead ID {recent['id']} ({recent['name']}) on {recent['last_contact_date']}")
-        print(f"      Skipping to avoid duplicate message. Marking current lead as duplicate.")
+        print(f"      ⚠️ DUPLICATA NO BANCO!")
+        print(f"         Phone {lead['phone']} já foi contatado:")
+        print(f"         Lead ID {recent['id']} ({recent['name']})")
+        print(f"         Status: {recent['status']}")
+        print(f"         Data: {recent['last_contact_date']}")
         
-        # Mark this lead as duplicate/invalid to prevent future attempts
         conn = get_db_connection()
         conn.execute("UPDATE leads SET status = 'duplicate' WHERE id = ?", (lead['id'],))
         conn.commit()
         conn.close()
         return
     
+    # =========================================================================
+    # PASSO 3: VERIFICAÇÃO OBRIGATÓRIA NO CHATWOOT
+    # =========================================================================
+    print("      📡 Verificando Chatwoot (OBRIGATÓRIO)...")
+    
+    chatwoot_history = None
+    contact_reason = None
+    
     try:
-        # 1. Check Chatwoot for existing conversation history
-        print("      Checking Chatwoot for conversation history...")
-        chatwoot_history = None
-        try:
-            import chatwoot_api
-            contact = chatwoot_api.get_contact_by_phone(lead['phone'])
-            if contact:
-                print(f"      Found Chatwoot contact: {contact.get('name')}")
-                messages = chatwoot_api.get_conversation_history(contact['id'])
-                if messages and len(messages) > 0:
-                    chatwoot_history = chatwoot_api.format_history_for_llm(messages)
-                    print(f"      Found {len(messages)} previous messages in Chatwoot")
-        except Exception as ch_err:
-            print(f"      Chatwoot check failed (will use standard template): {ch_err}")
+        import chatwoot_api
         
-        # 2. Scrape website
+        # Usa função que analisa se deve contatar
+        contact_check = chatwoot_api.should_contact_lead(lead['phone'])
+        
+        reason = contact_check['reason']
+        print(f"      Resultado Chatwoot: {reason}")
+        
+        # === SE NÃO DEVE CONTATAR ===
+        if not contact_check['should_contact']:
+            
+            if reason == 'waiting_response':
+                days = contact_check.get('days_since_contact', '?')
+                print(f"      ⏳ AGUARDANDO RESPOSTA")
+                print(f"         Última mensagem NOSSA há {days} dias")
+                print(f"         Não vamos mandar outra mensagem ainda.")
+                update_lead_status(lead['phone'], 'contacted')
+                return
+                
+            elif reason == 'declined':
+                signal = contact_check.get('decline_signal', 'não especificado')
+                print(f"      🚫 CLIENTE RECUSOU!")
+                print(f"         Sinal detectado: '{signal}'")
+                update_lead_status(lead['phone'], 'declined')
+                
+                # Atualiza Trello
+                try:
+                    import trello_crm
+                    if trello_crm.is_configured():
+                        card = trello_crm.find_card_by_phone(lead['phone'])
+                        if card:
+                            trello_crm.add_comment(card['id'], f"🚫 Lead RECUSOU\nSinal: {signal}")
+                            trello_crm.move_card(card['id'], "Arquivados")
+                except:
+                    pass
+                return
+            
+            else:
+                print(f"      ❌ Não deve contatar. Razão: {reason}")
+                update_lead_status(lead['phone'], 'skipped')
+                return
+        
+        # === PODE CONTATAR ===
+        chatwoot_history = contact_check.get('conversation_history')
+        contact_reason = reason
+        last_from = contact_check.get('last_message_from')
+        days_since = contact_check.get('days_since_contact')
+        
+        print(f"      ✅ Pode contatar!")
+        print(f"         Razão: {contact_reason}")
+        if last_from:
+            who = 'CLIENTE' if last_from == 'them' else 'NÓS'
+            print(f"         Última msg de: {who}")
+        if days_since is not None:
+            print(f"         Há {days_since} dias")
+        if chatwoot_history:
+            print(f"         Histórico: {len(chatwoot_history)} chars")
+    
+    except Exception as ch_err:
+        # =====================================================================
+        # CRÍTICO: Se Chatwoot falhar, NÃO enviar!
+        # =====================================================================
+        print(f"      ❌ ERRO CRÍTICO no Chatwoot: {ch_err}")
+        print(f"      🛑 ABORTANDO para prevenir duplicata")
+        print(f"      Lead volta para 'new' para tentar depois")
+        
+        update_lead_status(lead['phone'], 'new')
+        return
+    
+    # =========================================================================
+    # PASSO 4: PREPARAR MENSAGEM
+    # =========================================================================
+    try:
+        # Scrape website se disponível
         website_content = None
-        if lead['website']:
-            print(f"      Scraping {lead['website']}...") 
-            website_content = scrape_website(lead['website'])
+        if lead.get('website'):
+            print(f"      🌐 Scraping {lead['website']}...")
+            try:
+                website_content = scrape_website(lead['website'])
+            except Exception as scrape_err:
+                print(f"      ⚠️ Scrape falhou: {scrape_err}")
         
-        # 3. Generate message based on context
+        # Decide tipo de mensagem
         message_parts = None
         chosen_version = None
         
         if chatwoot_history:
-            # Use AI to generate contextual message based on history
-            print("      Generating contextual message based on Chatwoot history...")
+            # Tem histórico - gera mensagem contextual
+            print("      🧠 Gerando mensagem CONTEXTUAL...")
             from agent import generate_contextual_message
             message_parts = generate_contextual_message(lead, chatwoot_history)
             chosen_version = "CONTEXTUAL"
-        else:
-            # Use standard A/B/C templates
-            chosen_version = random.choice(['A', 'B', 'C'])
             
-            # Adjust for language
+        else:
+            # Sem histórico - usa templates A/B/C
+            chosen_version = random.choice(['A', 'B', 'C'])
             language = lead.get('language', 'pt')
-            final_version = chosen_version
+            
             if language == 'es':
                 final_version = f"{chosen_version}_ES"
-            
-            # Get message parts from template
-            from agent import PROMPT_TEMPLATES
-            message_parts = PROMPT_TEMPLATES.get(final_version, PROMPT_TEMPLATES.get(chosen_version, PROMPT_TEMPLATES['A']))
-            print(f"      Using template version {final_version} ({len(message_parts)} parts)...")
-        
-        if message_parts:
-            # 4. Send (Multi-part with delays for human-like behavior)
-            print("      Sending WhatsApp (Multi-part)...")
-            jid = check_whatsapp_exists(lead['phone'])
-            
-            if jid:
-                full_message_log = []
-                
-                for i, part in enumerate(message_parts):
-                    print(f"      Sending part {i+1}/{len(message_parts)}...")
-                    send_message(jid, part)
-                    full_message_log.append(part)
-                    
-                    # Delay between parts (except after last message)
-                    if i < len(message_parts) - 1:
-                        delay = random.randint(5, 10) # 5-10 seconds
-                        print(f"      Waiting {delay}s before next part...")
-                        time.sleep(delay)
-                
-                # 5. Update DB with full conversation
-                full_message = "\n\n".join(full_message_log)
-                update_lead_status(lead['phone'], 'contacted', f"🤖 Ivair (v{chosen_version}):\n\n{full_message}")
-                update_lead_prompt_version(lead['phone'], chosen_version)
-                
-                # 6. Trello Sync
-                try:
-                    import trello_crm
-                    if trello_crm.is_configured():
-                        card_id = trello_crm.create_card(lead, list_name="Contato Frio")
-                        
-                        if card_id:
-                            trello_crm.add_comment(card_id, f"🤖 Agente enviou (v{chosen_version}):\n\n{full_message}")
-                            print(f"      Trello synced (Card ID: {card_id} -> Contato Frio)")
-                except Exception as t_err:
-                    print(f"      Trello Sync Error: {t_err}")
-
-                print("      Success! Lead contacted.")
             else:
-                print("      Invalid WhatsApp (unexpected, should have been filtered). Deleting from DB.")
-                conn = get_db_connection()
-                conn.execute("DELETE FROM leads WHERE phone = ?", (lead['phone'],))
-                conn.commit()
-                conn.close()
-        else:
-            print("      Failed to get message template.")
-            # Revert to 'new' or mark as 'error' so we don't lose it?
-            # Safe to revert to 'new' if it was just an empty template error
-            update_lead_status(lead['phone'], 'new')
+                final_version = chosen_version
             
+            from agent import PROMPT_TEMPLATES
+            message_parts = PROMPT_TEMPLATES.get(
+                final_version, 
+                PROMPT_TEMPLATES.get(chosen_version, PROMPT_TEMPLATES['A'])
+            )
+            
+            print(f"      📝 Usando template {final_version}")
+        
+        if not message_parts:
+            print("      ❌ Falha ao gerar mensagem. Abortando.")
+            update_lead_status(lead['phone'], 'error_generating')
+            return
+        
+        # =====================================================================
+        # PASSO 5: ENVIAR MENSAGEM
+        # =====================================================================
+        print(f"      📤 Enviando {len(message_parts)} partes via WhatsApp...")
+        
+        jid = check_whatsapp_exists(lead['phone'])
+        
+        if not jid:
+            print("      ❌ Número WhatsApp inválido. Removendo lead.")
+            conn = get_db_connection()
+            conn.execute("DELETE FROM leads WHERE phone = ?", (lead['phone'],))
+            conn.commit()
+            conn.close()
+            return
+        
+        # Envia cada parte com delay
+        full_message_log = []
+        
+        for i, part in enumerate(message_parts):
+            if not part or not part.strip():
+                continue
+                
+            preview = part[:50] + "..." if len(part) > 50 else part
+            print(f"         Parte {i+1}/{len(message_parts)}: {preview}")
+            send_message(jid, part)
+            full_message_log.append(part)
+            
+            # Delay entre partes (exceto última)
+            if i < len(message_parts) - 1:
+                delay = random.randint(5, 10)
+                print(f"         ⏱️ Aguardando {delay}s...")
+                time.sleep(delay)
+        
+        # =====================================================================
+        # PASSO 6: ATUALIZAR STATUS
+        # =====================================================================
+        full_message = "\n\n".join(full_message_log)
+        
+        update_lead_status(
+            lead['phone'], 
+            'contacted', 
+            f"🤖 Ivair (v{chosen_version}):\n\n{full_message}"
+        )
+        update_lead_prompt_version(lead['phone'], chosen_version)
+        
+        # Sync com Trello
+        try:
+            import trello_crm
+            if trello_crm.is_configured():
+                card_id = trello_crm.create_card(lead, list_name="Contato Frio")
+                if card_id:
+                    trello_crm.add_comment(
+                        card_id, 
+                        f"🤖 Agente enviou (v{chosen_version}):\n\n{full_message}"
+                    )
+                    print(f"      📋 Trello sincronizado")
+        except Exception as t_err:
+            print(f"      ⚠️ Erro Trello: {t_err}")
+        
+        print(f"      ✅ SUCESSO! Lead {lead['name']} contatado.")
+        print("=" * 60 + "\n")
+        
     except Exception as e:
-        print(f"[Job] Error processing lead {lead['name']}: {e}")
-        # Mark as error to avoid infinite loop
+        print(f"[Job] ❌ Erro processando lead {lead['name']}: {e}")
+        import traceback
+        traceback.print_exc()
         update_lead_status(lead['phone'], 'error_sending')
+
 
 if __name__ == "__main__":
     import sys
-    # Enable unbuffered output programmatically just in case
     sys.stdout.reconfigure(line_buffering=True)
     
     print("=== Auto-Scheduler Started ===")
     print("Schedule: Mon-Fri | 09:00-11:40 & 14:00-17:20 | Every 30 mins")
+    print("Version: 2.0 (Anti-Duplicata)")
     
     try:
         # Ensure Database is Initialized
         from database import init_db
         print("[Startup] Initializing database...")
         init_db()
-        # Initialize Trello Lists (Ensure they exist or just checking)
-        # User requested specific lists: 'Contato Frio', 'Conexão'
+        
+        # Initialize Trello Lists
         try:
             import trello_crm
             if trello_crm.is_configured():
-                # We assume these lists exist or we create them if missing?
-                # Let's create them just in case to avoid errors, using the names user gave.
                 trello_crm.create_list("Contato Frio")
                 trello_crm.create_list("Conexão")
-                # 'A Prospectar' is manual, so we don't necessarily need to autocreate it, but good practice.
                 trello_crm.create_list("A Prospectar")
+                trello_crm.create_list("Arquivados")  # Para leads que recusaram
         except Exception as e:
             print(f"Warning: Could not init Trello lists: {e}")
 
-        # Run once at startup to check/refill
+        # Run once at startup
         auto_refill_leads()
         
-        # Run the first job immediately as requested by user to see it working
         print("[Job] Executing immediate start-up run...")
         process_one_lead()
         
-        # Schedule layout
+        # Schedule
         schedule.every(30).minutes.do(process_one_lead)
-        
-        # Ideally checking refill more often?
         schedule.every(1).hours.do(auto_refill_leads)
-
-        # Follow-ups (Check every 4 hours)
         schedule.every(4).hours.do(process_followups, dry_run=False)
 
-        # Chatwoot <-> Trello Sync (Every 15 mins)
+        # Chatwoot <-> Trello Sync
         from sync_chatwoot_trello import run_sync
         schedule.every(15).minutes.do(run_sync)
 
         while True:
             schedule.run_pending()
-            time.sleep(60) # Sleep 1 minute to save CPU
+            time.sleep(60)
             
     except Exception as e:
         print(f"CRITICAL SCHEDULER CRASH: {e}")

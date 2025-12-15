@@ -202,8 +202,9 @@ def generate_contextual_message(lead_data, conversation_history):
     3. Não repita informações já ditas, mas faça referência ao que foi conversado
     4. Mantenha o tom profissional e amigável do Ivair
     5. Foque em avançar a conversa sobre a parceria com a 100fronteiras
-    6. A mensagem deve ser dividida em 4 partes curtas (para envio sequencial)
-    7. Retorne APENAS as 4 partes separadas por "|||"
+    6. CRÍTICO: NÃO SE APRESENTE NOVAMENTE se já houver mensagens suas no histórico. Vá direto ao ponto.
+    7. A mensagem deve ser dividida em 4 partes curtas (para envio sequencial)
+    8. Retorne APENAS as 4 partes separadas por "|||"
     
     Exemplo de formato de resposta:
     Oi [Nome], tudo bem?|||Retomando nossa conversa sobre [assunto]...|||[Continuação contextual]|||[Pergunta ou call-to-action]
