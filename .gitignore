@@ -9,3 +9,5 @@ venv/
 leads.db
 *.log
 .DS_Store
+verify_config.py
+debug_lookup.py
